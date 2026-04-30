@@ -1,5 +1,6 @@
 import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import ProtectedRoute from './components/ProtectedRoute';
 
 const Welcome = lazy(() => import('./pages/Welcome'));
 const Home = lazy(() => import('./pages/Home'));
@@ -8,6 +9,8 @@ const Ongoing = lazy(() => import('./pages/Ongoing'));
 const Schedule = lazy(() => import('./pages/Schedule'));
 const Watch = lazy(() => import('./pages/Watch'));
 const History = lazy(() => import('./pages/History'));
+const Login = lazy(() => import('./pages/Login'));
+const Profile = lazy(() => import('./pages/Profile'));
 
 function App() {
   return (
@@ -15,9 +18,19 @@ function App() {
       <Suspense fallback={<div className="min-h-screen bg-[#0a0a0c]"></div>}>
         <Routes>
           <Route path="/" element={<Welcome />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/home" element={<Home />} />
           <Route path="/explore" element={<Explore />} />
-          <Route path="/history" element={<History />} />
+          <Route path="/history" element={
+            <ProtectedRoute>
+              <History />
+            </ProtectedRoute>
+          } />
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          } />
           <Route path="/ongoing" element={<Ongoing />} />
           <Route path="/schedule" element={<Schedule />} />
           <Route path="/anime/:slug/:episode?" element={<Watch />} />

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabaseClient';
 
 const ShimmerEffect = () => (
   <div className="absolute top-0 bottom-0 left-0 w-[150%] animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/5 to-transparent z-10" style={{ transform: 'translate3d(-100%, 0, 0) skewX(-20deg)' }} />
@@ -65,11 +67,13 @@ const formatTime = (timeInSeconds) => {
 };
 
 const Watch = () => {
+  const { user } = useAuth();
   const { slug, episode } = useParams();
   const id = slug ? slug.split('-')[0] : null;
   const navigate = useNavigate();
 
   const [anime, setAnime] = useState(null);
+  const [isFavorite, setIsFavorite] = useState(false);
   const [episodes, setEpisodes] = useState([]);
   const[currentEpId, setCurrentEpId] = useState(null);
   const [servers, setServers] = useState([]);
@@ -146,6 +150,16 @@ const Watch = () => {
           setAnime(res.data);
           setEpisodes(res.data.episode_list ||[]);
 
+          if (user) {
+            const { data } = await supabase
+              .from('favorites')
+              .select('*')
+              .eq('user_id', user.id)
+              .eq('anime_slug', id)
+              .single();
+            if (data) setIsFavorite(true);
+          }
+
           const shareTitle = `Tonton ${res.data.title} - NefuSoft`;
           const shareDesc = res.data.synopsis ? res.data.synopsis.substring(0, 150) + '...' : 'Streaming anime subtitle Indonesia gratis.';
           const shareImg = res.data.image_poster || res.data.image_cover;
@@ -178,6 +192,26 @@ const Watch = () => {
       if (targetEp && targetEp.id !== currentEpId) setCurrentEpId(targetEp.id);
     }
   }, [episode, episodes, currentEpId]);
+
+  const toggleFavorite = async () => {
+    if (!user) {
+      alert('Silakan login untuk menambahkan ke favorit!');
+      return;
+    }
+    
+    if (isFavorite) {
+      await supabase.from('favorites').delete().eq('user_id', user.id).eq('anime_slug', id);
+      setIsFavorite(false);
+    } else {
+      await supabase.from('favorites').insert({
+        user_id: user.id,
+        anime_slug: id,
+        anime_title: anime.title,
+        poster_url: anime.image_poster
+      });
+      setIsFavorite(true);
+    }
+  };
 
   const changeEpisode = (epObj) => {
     navigate(`/anime/${slug}/${epObj.index}`, { replace: true });
@@ -807,6 +841,9 @@ const Watch = () => {
                     <p className="text-white/50 text-[10px] md:text-xs mb-5 font-bold uppercase tracking-widest">{anime.synonyms}</p>
                     
                     <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-6">
+                      <button onClick={toggleFavorite} className={`px-2.5 py-1 rounded-sm text-[9px] uppercase font-black tracking-widest border transition-all ${isFavorite ? 'bg-red-500/20 text-red-500 border-red-500/40' : 'bg-white/10 text-white/80 border-white/5'}`}>
+                         {isFavorite ? '❤️ Favorited' : '🤍 Favorit'}
+                      </button>
                       <span className="bg-[#F6CF80] text-black text-[9px] px-2.5 py-1 rounded-sm uppercase font-black tracking-widest">{anime.type}</span>
                       <span className="bg-white/10 text-white/80 text-[9px] px-2.5 py-1 rounded-sm uppercase font-bold tracking-widest border border-white/5">{anime.status}</span>
                       <span className="bg-white/10 text-white/80 text-[9px] px-2.5 py-1 rounded-sm uppercase font-bold tracking-widest border border-white/5">{anime.aired_start || '?'}</span>
