@@ -201,13 +201,21 @@ const Watch = () => {
           setEpisodes(res.data.episode_list ||[]);
 
           if (user) {
-            const { data } = await supabase
+            const { data: favData } = await supabase
               .from('favorites')
               .select('*')
               .eq('user_id', user.id)
               .eq('anime_slug', id)
               .single();
-            if (data) setIsFavorite(true);
+            if (favData) setIsFavorite(true);
+
+            const { data: bookmarkData } = await supabase
+              .from('bookmarks')
+              .select('*')
+              .eq('user_id', user.id)
+              .eq('anime_slug', id)
+              .maybeSingle();
+            if (bookmarkData) setIsBookmarked(true);
           }
 
           const shareTitle = `Tonton ${res.data.title} - NefuSoft`;
@@ -269,28 +277,48 @@ const Watch = () => {
       return;
     }
 
-    if (isBookmarked_) {
-      const bookmarkToDelete = bookmarks.find(b => b.anime_slug === id);
-      if (bookmarkToDelete) {
-        await removeBookmark(bookmarkToDelete.id);
+    try {
+      if (isBookmarked_) {
+        const bookmarkToDelete = bookmarks.find(b => b.anime_slug === id);
+        if (bookmarkToDelete) {
+          await removeBookmark(bookmarkToDelete.id);
+          setIsBookmarked(false);
+        }
+      } else {
+        if (!anime) {
+          console.error('[v0] Anime data is missing');
+          return;
+        }
+        const result = await addBookmark(
+          {
+            slug: id,
+            title: anime.title,
+            posterUrl: anime.image_poster
+          },
+          episodes.find(e => e.id === currentEpId) || null
+        );
+        if (result) {
+          setIsBookmarked(true);
+          console.log('[v0] Bookmark added successfully');
+        }
       }
-      setIsBookmarked(false);
-    } else {
-      await addBookmark(
-        {
-          slug: id,
-          title: anime.title,
-          posterUrl: anime.image_poster
-        },
-        episodes.find(e => e.id === currentEpId) || null
-      );
-      setIsBookmarked(true);
+    } catch (error) {
+      console.error('[v0] Error toggling bookmark:', error);
+      alert('Gagal menyimpan bookmark. Silakan coba lagi.');
     }
   };
 
   const changeEpisode = (epObj) => {
     navigate(`/anime/${slug}/${epObj.index}`, { replace: true });
   };
+
+  // Check if anime is bookmarked when bookmarks or anime changes
+  useEffect(() => {
+    if (anime && id && bookmarks.length >= 0) {
+      const isMarked = bookmarks.some(b => b.anime_slug === id);
+      setIsBookmarked(isMarked);
+    }
+  }, [anime, id, bookmarks]);
 
   useEffect(() => {
     if (!currentEpId) return;

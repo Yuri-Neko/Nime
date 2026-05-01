@@ -13,19 +13,55 @@ const Chat = ({ isOpen, onClose }) => {
 
   useEffect(() => {
     const fetchMessages = async () => {
-      const { data } = await supabase.from('messages').select('*, profiles(username)').order('created_at', { ascending: true }).limit(50);
-      setMessages(data || []);
-    };
-    fetchMessages();
-
-    const channel = supabase.channel('public:messages').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-      setMessages(prev => [...prev, payload.new]);
-      if (chatContainerRef.current) {
-        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      try {
+        const { data, error } = await supabase
+          .from('messages')
+          .select('id, content, created_at, user_id, profiles(username)')
+          .order('created_at', { ascending: true })
+          .limit(50);
+        
+        if (error) {
+          console.error('[v0] Error fetching messages:', error.message);
+          return;
+        }
+        setMessages(data || []);
+      } catch (err) {
+        console.error('[v0] Error in fetchMessages:', err);
       }
-    }).subscribe();
-    return () => supabase.removeChannel(channel);
-  }, []);
+    };
+    
+    if (user) {
+      fetchMessages();
+    }
+
+    let channel;
+    try {
+      channel = supabase.channel('public:messages').on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'messages' 
+      }, payload => {
+        if (payload.new) {
+          setMessages(prev => [...prev, { ...payload.new, profiles: { username: payload.new.user_id?.substring(0, 8) } }]);
+          if (chatContainerRef.current) {
+            setTimeout(() => {
+              if (chatContainerRef.current) {
+                chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+              }
+            }, 0);
+          }
+        }
+      }).subscribe();
+    } catch (err) {
+      console.error('[v0] Error subscribing to channel:', err);
+    }
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [user]);
 
   useEffect(() => {
     if (chatContainerRef.current && isOpen) {
@@ -35,9 +71,25 @@ const Chat = ({ isOpen, onClose }) => {
 
   const sendMessage = async () => {
     if (!input.trim() || !user) return;
-    const cleanContent = filter.clean(input);
-    await supabase.from('messages').insert({ content: cleanContent, user_id: user.id });
-    setInput('');
+    
+    try {
+      const cleanContent = filter.clean(input);
+      const { error } = await supabase.from('messages').insert({ 
+        content: cleanContent, 
+        user_id: user.id 
+      });
+      
+      if (error) {
+        console.error('[v0] Error sending message:', error.message);
+        alert('Gagal mengirim pesan. Silakan coba lagi.');
+        return;
+      }
+      
+      setInput('');
+    } catch (err) {
+      console.error('[v0] Error in sendMessage:', err);
+      alert('Terjadi kesalahan saat mengirim pesan.');
+    }
   };
 
   return (

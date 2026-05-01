@@ -53,9 +53,13 @@ export const BookmarkProvider = ({ children }) => {
   }, [user]);
 
   const addBookmark = async (animeData, episodeData = null, listId = null) => {
-    if (!user) return;
+    if (!user) {
+      console.error('[v0] User not authenticated');
+      return null;
+    }
 
     try {
+      console.log('[v0] Adding bookmark:', { animeData, episodeData, userId: user.id });
       const { data, error } = await supabase
         .from('bookmarks')
         .insert({
@@ -70,11 +74,20 @@ export const BookmarkProvider = ({ children }) => {
         })
         .select();
 
-      if (error) throw error;
-      setBookmarks([...bookmarks, data[0]]);
-      return data[0];
+      if (error) {
+        console.error('[v0] Bookmark insert error:', error);
+        throw error;
+      }
+      
+      console.log('[v0] Bookmark added successfully:', data);
+      if (data && data.length > 0) {
+        setBookmarks([...bookmarks, data[0]]);
+        return data[0];
+      }
+      return null;
     } catch (error) {
-      console.error('Error adding bookmark:', error.message);
+      console.error('[v0] Error adding bookmark:', error.message || error);
+      return null;
     }
   };
 
