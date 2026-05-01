@@ -257,17 +257,38 @@ const Watch = () => {
       return;
     }
     
-    if (isFavorite) {
-      await supabase.from('favorites').delete().eq('user_id', user.id).eq('anime_slug', id);
-      setIsFavorite(false);
-    } else {
-      await supabase.from('favorites').insert({
-        user_id: user.id,
-        anime_slug: id,
-        anime_title: anime.title,
-        poster_url: anime.image_poster
-      });
-      setIsFavorite(true);
+    try {
+      if (isFavorite) {
+        const { error } = await supabase
+          .from('favorites')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('anime_slug', id);
+        
+        if (error) throw error;
+        setIsFavorite(false);
+      } else {
+        if (!anime) {
+          console.error('[v0] Anime data missing for favorite');
+          alert('Gagal menambahkan ke favorit. Data anime tidak lengkap.');
+          return;
+        }
+
+        const { error } = await supabase
+          .from('favorites')
+          .insert({
+            user_id: user.id,
+            anime_slug: id,
+            anime_title: anime.title,
+            poster_url: anime.image_poster
+          });
+        
+        if (error) throw error;
+        setIsFavorite(true);
+      }
+    } catch (error) {
+      console.error('[v0] Error toggling favorite:', error);
+      alert(isFavorite ? 'Gagal menghapus dari favorit.' : 'Gagal menambahkan ke favorit.');
     }
   };
 
@@ -283,12 +304,20 @@ const Watch = () => {
         if (bookmarkToDelete) {
           await removeBookmark(bookmarkToDelete.id);
           setIsBookmarked(false);
+          console.log('[v0] Bookmark removed successfully');
         }
       } else {
         if (!anime) {
           console.error('[v0] Anime data is missing');
+          alert('Gagal menambahkan bookmark. Data anime tidak lengkap.');
           return;
         }
+
+        if (!id) {
+          console.error('[v0] Anime slug is missing');
+          return;
+        }
+
         const result = await addBookmark(
           {
             slug: id,
@@ -297,9 +326,12 @@ const Watch = () => {
           },
           episodes.find(e => e.id === currentEpId) || null
         );
+
         if (result) {
           setIsBookmarked(true);
-          console.log('[v0] Bookmark added successfully');
+          console.log('[v0] Bookmark added successfully:', result);
+        } else {
+          console.warn('[v0] Failed to add bookmark - it may already exist');
         }
       }
     } catch (error) {

@@ -52,6 +52,9 @@ CREATE POLICY "Users can view their own bookmarks" ON bookmarks
 CREATE POLICY "Users can insert their own bookmarks" ON bookmarks
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+CREATE POLICY "Users can update their own bookmarks" ON bookmarks
+  FOR UPDATE USING (auth.uid() = user_id);
+
 CREATE POLICY "Users can delete their own bookmarks" ON bookmarks
   FOR DELETE USING (auth.uid() = user_id);
 
@@ -62,6 +65,9 @@ CREATE POLICY "Users can view their own bookmark lists" ON bookmark_lists
 CREATE POLICY "Users can insert their own bookmark lists" ON bookmark_lists
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+CREATE POLICY "Users can update their own bookmark lists" ON bookmark_lists
+  FOR UPDATE USING (auth.uid() = user_id);
+
 CREATE POLICY "Users can delete their own bookmark lists" ON bookmark_lists
   FOR DELETE USING (auth.uid() = user_id);
 
@@ -71,6 +77,9 @@ CREATE POLICY "Users can view their own watch history" ON watch_history
 
 CREATE POLICY "Users can insert their own watch history" ON watch_history
   FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own watch history" ON watch_history
+  FOR UPDATE USING (auth.uid() = user_id);
 
 CREATE POLICY "Users can delete their own watch history" ON watch_history
   FOR DELETE USING (auth.uid() = user_id);

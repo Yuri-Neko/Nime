@@ -103,19 +103,51 @@ const Profile = () => {
         </div>
       )}
       
-      <h2 className="text-xl font-bold mb-4">Anime Favorit</h2>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {favorites.length > 0 ? (
-          favorites.map(f => (
-            <div key={f.anime_slug} className="bg-[#16161a] p-2 rounded">
-              <img src={f.poster_url} alt={f.anime_title} className="w-full h-48 object-cover rounded" />
-              <p className="mt-2 text-sm font-bold truncate">{f.anime_title}</p>
+      <h2 className="text-xl font-bold mb-4">Anime Favorit ({favorites.length})</h2>
+      {favorites.length > 0 ? (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {favorites.map(f => (
+            <div key={f.anime_slug} className="group relative bg-[#16161a] rounded-lg overflow-hidden border border-white/10 hover:border-[#F6CF80] transition cursor-pointer">
+              <img 
+                src={f.poster_url} 
+                alt={f.anime_title} 
+                className="w-full h-56 object-cover group-hover:opacity-75 transition" 
+                onError={(e) => e.target.src = 'https://via.placeholder.com/200x300?text=No+Image'}
+              />
+              <div className="p-3">
+                <p className="text-sm font-bold truncate text-white group-hover:text-[#F6CF80] transition">{f.anime_title}</p>
+              </div>
+              <button
+                onClick={async () => {
+                  try {
+                    const { error } = await supabase
+                      .from('favorites')
+                      .delete()
+                      .eq('anime_slug', f.anime_slug)
+                      .eq('user_id', user.id);
+                    
+                    if (error) throw error;
+                    setFavorites(favorites.filter(fav => fav.anime_slug !== f.anime_slug));
+                  } catch (err) {
+                    console.error('Error removing favorite:', err);
+                    alert('Gagal menghapus dari favorit');
+                  }
+                }}
+                className="absolute top-2 right-2 bg-red-600/80 hover:bg-red-700 p-2 rounded opacity-0 group-hover:opacity-100 transition"
+              >
+                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                </svg>
+              </button>
             </div>
-          ))
-        ) : (
-          <p className="text-white/60">Belum ada anime favorit.</p>
-        )}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-[#16161a] p-8 rounded-xl border border-white/10 text-center">
+          <p className="text-white/60 mb-4">Belum ada anime favorit</p>
+          <p className="text-white/40 text-sm">Tambahkan anime ke favorit dengan klik tombol hati saat menonton</p>
+        </div>
+      )}
 
       <h2 className="text-xl font-bold mt-8 mb-4">Jaringan Sosial</h2>
       <div className="bg-[#16161a] p-6 rounded-xl border border-white/10">

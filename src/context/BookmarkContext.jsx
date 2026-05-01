@@ -58,6 +58,19 @@ export const BookmarkProvider = ({ children }) => {
       return null;
     }
 
+    // Validate anime data
+    if (!animeData || !animeData.slug || !animeData.title || !animeData.posterUrl) {
+      console.error('[v0] Invalid anime data:', animeData);
+      return null;
+    }
+
+    // Check if bookmark already exists
+    const alreadyBookmarked = bookmarks.some(b => b.anime_slug === animeData.slug);
+    if (alreadyBookmarked) {
+      console.log('[v0] Anime already bookmarked:', animeData.slug);
+      return null;
+    }
+
     try {
       console.log('[v0] Adding bookmark:', { animeData, episodeData, userId: user.id });
       const { data, error } = await supabase
@@ -70,7 +83,6 @@ export const BookmarkProvider = ({ children }) => {
           episode_id: episodeData?.id || null,
           episode_number: episodeData?.number || null,
           list_id: listId || null,
-          created_at: new Date().toISOString(),
         })
         .select();
 
@@ -79,9 +91,9 @@ export const BookmarkProvider = ({ children }) => {
         throw error;
       }
       
-      console.log('[v0] Bookmark added successfully:', data);
       if (data && data.length > 0) {
-        setBookmarks([...bookmarks, data[0]]);
+        console.log('[v0] Bookmark added successfully:', data[0]);
+        setBookmarks([data[0], ...bookmarks]);
         return data[0];
       }
       return null;
