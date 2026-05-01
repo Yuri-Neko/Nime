@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { useAuth } from '../context/AuthContext';
+import { useBookmarks } from '../context/BookmarkContext';
+import { useWatchHistory } from '../context/WatchHistoryContext';
 import { supabase } from '../lib/supabaseClient';
 
 const ShimmerEffect = () => (
@@ -68,12 +70,15 @@ const formatTime = (timeInSeconds) => {
 
 const Watch = () => {
   const { user } = useAuth();
+  const { addBookmark, removeBookmark, bookmarks } = useBookmarks();
+  const { addToHistory } = useWatchHistory();
   const { slug, episode } = useParams();
   const id = slug ? slug.split('-')[0] : null;
   const navigate = useNavigate();
 
   const [anime, setAnime] = useState(null);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [isBookmarked_, setIsBookmarked] = useState(false);
   const [episodes, setEpisodes] = useState([]);
   const[currentEpId, setCurrentEpId] = useState(null);
   const [servers, setServers] = useState([]);
@@ -258,6 +263,31 @@ const Watch = () => {
     }
   };
 
+  const toggleBookmark = async () => {
+    if (!user) {
+      alert('Silakan login untuk menambahkan bookmark!');
+      return;
+    }
+
+    if (isBookmarked_) {
+      const bookmarkToDelete = bookmarks.find(b => b.anime_slug === id);
+      if (bookmarkToDelete) {
+        await removeBookmark(bookmarkToDelete.id);
+      }
+      setIsBookmarked(false);
+    } else {
+      await addBookmark(
+        {
+          slug: id,
+          title: anime.title,
+          posterUrl: anime.image_poster
+        },
+        episodes.find(e => e.id === currentEpId) || null
+      );
+      setIsBookmarked(true);
+    }
+  };
+
   const changeEpisode = (epObj) => {
     navigate(`/anime/${slug}/${epObj.index}`, { replace: true });
   };
@@ -322,6 +352,20 @@ const Watch = () => {
         videoRef.current.play().then(() => {
           setIsPlaying(true);
           setHasStarted(true);
+          
+          // Add to watch history when user starts playing
+          if (user && anime && episodes) {
+            const currentEp = episodes.find(e => e.id === currentEpId);
+            addToHistory(
+              {
+                slug: id,
+                title: anime.title,
+                posterUrl: anime.image_poster
+              },
+              currentEp || { number: 1 }
+            );
+          }
+          
           resetControlsTimeout();
         }).catch(() => {
           setIsPlaying(false);
@@ -888,6 +932,9 @@ const Watch = () => {
                     <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-6">
                       <button onClick={toggleFavorite} className={`px-2.5 py-1 rounded-sm text-[9px] uppercase font-black tracking-widest border transition-all ${isFavorite ? 'bg-red-500/20 text-red-500 border-red-500/40' : 'bg-white/10 text-white/80 border-white/5'}`}>
                          {isFavorite ? '❤️ Favorited' : '🤍 Favorit'}
+                      </button>
+                      <button onClick={toggleBookmark} className={`px-2.5 py-1 rounded-sm text-[9px] uppercase font-black tracking-widest border transition-all ${isBookmarked_ ? 'bg-[#F6CF80]/20 text-[#F6CF80] border-[#F6CF80]/40' : 'bg-white/10 text-white/80 border-white/5'}`}>
+                         {isBookmarked_ ? '🔖 Bookmarked' : '📌 Bookmark'}
                       </button>
                       <span className="bg-[#F6CF80] text-black text-[9px] px-2.5 py-1 rounded-sm uppercase font-black tracking-widest">{anime.type}</span>
                       <span className="bg-white/10 text-white/80 text-[9px] px-2.5 py-1 rounded-sm uppercase font-bold tracking-widest border border-white/5">{anime.status}</span>

@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useBookmarks } from '../context/BookmarkContext';
 
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { bookmarks } = useBookmarks();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [showBookmarkBar, setShowBookmarkBar] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [liveResults, setLiveResults] = useState([]);
   const [isLiveLoading, setIsLiveLoading] = useState(false);
@@ -53,9 +56,12 @@ const Navbar = () => {
     { path: '/home', label: 'Home', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/> },
     { path: '/explore', label: 'Explore', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/> },
     { path: '/history', label: 'History', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/> },
+    { path: '/bookmarks', label: 'Bookmarks', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h6a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V5z"/> },
     { path: '/ongoing', label: 'Ongoing', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/> },
     { path: '/schedule', label: 'Schedule', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/> }
   ];
+
+  const recentBookmarks = bookmarks.slice(0, 3);
 
   return (
     <>
@@ -66,6 +72,43 @@ const Navbar = () => {
           </div>
           
           <div className="flex items-center justify-end flex-1 gap-3 z-10">
+            {/* Bookmark Bar Trigger */}
+            {bookmarks.length > 0 && (
+              <div className="relative group">
+                <div className="w-9 h-9 bg-white/5 rounded-full flex items-center justify-center text-white cursor-pointer border border-white/10 hover:bg-[#F6CF80] hover:text-black hover:border-[#F6CF80] transition-colors shrink-0">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h6a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V5z"/></svg>
+                  {bookmarks.length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-[#F6CF80] text-black text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center">{bookmarks.length}</span>
+                  )}
+                </div>
+                {/* Quick Access Dropdown */}
+                <div className="absolute right-0 mt-2 w-64 bg-[#16161a] border border-white/10 rounded-lg p-3 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-200 shadow-xl">
+                  <p className="text-white/60 text-xs font-bold mb-2">Bookmark Terbaru</p>
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {recentBookmarks.map(bm => (
+                      <div
+                        key={bm.id}
+                        onClick={() => navigate(`/anime/${bm.anime_slug}/${bm.episode_number || 1}`)}
+                        className="flex gap-2 items-center p-2 hover:bg-white/5 rounded cursor-pointer transition group/item"
+                      >
+                        <img src={bm.poster_url} alt="" className="w-8 h-12 object-cover rounded" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white text-xs font-bold truncate group-hover/item:text-[#F6CF80]">{bm.anime_title}</p>
+                          {bm.episode_number && <p className="text-white/50 text-[10px]">Ep. {bm.episode_number}</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => navigate('/bookmarks')}
+                    className="w-full mt-2 text-[#F6CF80] hover:bg-white/5 text-xs font-bold py-1 rounded transition"
+                  >
+                    Lihat Semua
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="w-9 h-9 bg-white/5 rounded-full flex items-center justify-center text-white cursor-pointer border border-white/10 hover:bg-[#F6CF80] hover:text-black hover:border-[#F6CF80] transition-colors shrink-0" onClick={() => setIsSearchOpen(true)}>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
             </div>

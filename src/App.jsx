@@ -9,6 +9,7 @@ const Ongoing = lazy(() => import('./pages/Ongoing'));
 const Schedule = lazy(() => import('./pages/Schedule'));
 const Watch = lazy(() => import('./pages/Watch'));
 const History = lazy(() => import('./pages/History'));
+const Bookmarks = lazy(() => import('./pages/Bookmarks'));
 const Login = lazy(() => import('./pages/Login'));
 const Profile = lazy(() => import('./pages/Profile'));
 
@@ -24,6 +25,11 @@ function App() {
           <Route path="/history" element={
             <ProtectedRoute>
               <History />
+            </ProtectedRoute>
+          } />
+          <Route path="/bookmarks" element={
+            <ProtectedRoute>
+              <Bookmarks />
             </ProtectedRoute>
           } />
           <Route path="/profile" element={
