@@ -101,6 +101,21 @@ const Navbar = () => {
           );
         })}
       </div>
+
+      {showLoginPopup && (
+        <div className="fixed inset-0 z-[999] bg-[#0a0a0c]/80 backdrop-blur-sm flex items-center justify-center p-4 animate-[fadeIn_0.2s_ease-out]">
+          <div className="bg-[#16161a] border border-white/10 rounded-3xl p-8 max-w-sm w-full flex flex-col items-center relative shadow-2xl">
+            <button onClick={() => setShowLoginPopup(false)} className="absolute top-5 right-5 text-white/30 hover:text-[#F6CF80] transition-colors">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+            <h3 className="text-white font-black text-2xl mb-6">Selamat Datang!</h3>
+            <div className="flex flex-col gap-3 w-full">
+              <button onClick={() => { navigate('/login?mode=login'); setShowLoginPopup(false); }} className="w-full bg-[#F6CF80] text-black font-black p-3 rounded-xl hover:bg-white transition">Masuk</button>
+              <button onClick={() => { navigate('/login?mode=register'); setShowLoginPopup(false); }} className="w-full bg-white/5 border border-white/10 text-white font-bold p-3 rounded-xl hover:bg-white/10 transition">Daftar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import Chat from '../components/Chat';
+import { useAuth } from '../context/AuthContext';
 
 const Shimmer = () => (
   <div className="absolute top-0 bottom-0 left-0 w-[150%] animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/5 to-transparent z-10" style={{ transform: 'translate3d(-100%, 0, 0) skewX(-20deg)' }} />
@@ -27,6 +29,7 @@ const CardSkeleton = () => (
 
 const Home = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [schedule, setSchedule] = useState(window.__NEFUSOFT_CACHE__?.schedule || {});
   const [ongoing, setOngoing] = useState(window.__NEFUSOFT_CACHE__?.ongoing || []);
   const[popular, setPopular] = useState(window.__NEFUSOFT_CACHE__?.popular || []);
@@ -34,6 +37,7 @@ const Home = () => {
   const [isTransitioning, setIsTransitioning] = useState(true);
   const [isLoading, setIsLoading] = useState(!window.__NEFUSOFT_CACHE__);
   const[copyToast, setCopyToast] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   
   const ongoingCardRefs = useRef([]);
   const todayCardRefs = useRef([]);
@@ -177,6 +181,9 @@ const Home = () => {
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 10px; cursor: pointer; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
+
+        @keyframes slideInLeft { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+        @keyframes slideOutLeft { from { transform: translateX(0); } to { transform: translateX(-100%); } }
       `}</style>
       
       {copyToast && (
@@ -336,6 +343,19 @@ const Home = () => {
         </div>
       </section>
       <Footer />
+
+      <div 
+        className={`fixed bottom-4 left-4 z-[80] w-12 h-12 bg-[#F6CF80] rounded-full flex items-center justify-center cursor-pointer shadow-lg transition-all duration-300 ${isChatOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+        onClick={() => setIsChatOpen(true)}
+      >
+        <svg className="w-6 h-6 text-black" fill="currentColor" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+      </div>
+
+      <div 
+        className={`fixed bottom-0 left-0 h-full w-80 max-w-[90vw] bg-[#0a0a0c] z-[90] shadow-2xl transition-transform duration-300 ease-out border-r border-white/5 ${isChatOpen ? 'translate-x-0' : '-translate-x-full'}`}
+      >
+        <Chat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+      </div>
     </div>
   );
 };

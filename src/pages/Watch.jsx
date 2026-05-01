@@ -111,10 +111,55 @@ const Watch = () => {
   const skipBuffer = useRef(0);
   const skipTimeout = useRef(null);
   const hoverTimeoutRef = useRef(null);
+  const lastHistoryUpdate = useRef(0);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [id]);
+
+  useEffect(() => {
+    if (!user || !id || !currentEpId || !videoRef.current || !hasStarted) return;
+
+    const saveWatchHistory = async () => {
+      const now = Date.now();
+      if (now - lastHistoryUpdate.current < 5000) return; // Update every 5 seconds
+
+      lastHistoryUpdate.current = now;
+      const { error } = await supabase.from('watch_history').upsert({
+        user_id: user.id,
+        anime_slug: id,
+        episode_id: currentEpId,
+        progress: videoRef.current.currentTime,
+        updated_at: new Date().toISOString()
+        }, { onConflict: ['user_id', 'anime_slug', 'episode_id'] });
+
+      if (error) console.error('Error saving watch history:', error.message);
+    };
+
+    const interval = setInterval(saveWatchHistory, 5000); // Save every 5 seconds
+    return () => clearInterval(interval);
+
+  }, [user, id, currentEpId, hasStarted]);
+
+  useEffect(() => {
+    if (user && id && currentEpId) {
+      const loadWatchHistory = async () => {
+        const { data } = await supabase
+          .from('watch_history')
+          .select('progress')
+          .eq('user_id', user.id)
+          .eq('anime_slug', id)
+          .eq('episode_id', currentEpId)
+          .single();
+        
+        if (data && videoRef.current) {
+          videoRef.current.currentTime = data.progress;
+          setCurrentTime(data.progress);
+        }
+      };
+      loadWatchHistory();
+    }
+  }, [user, id, currentEpId, videoRef]);
 
   useEffect(() => {
     if (!id) return;
